@@ -22,7 +22,7 @@ class HypoTest():
 
     def get_num_pulls(self, arm): 
         num = norm.ppf(self.beta) - norm.ppf(1.- self.alpha)
-        den = np.abs(self.models[0, arm] - self.models[1, arm])
+        den = np.abs(np.min(self.models[:, arm]) - np.max(self.models[:, arm]))
         return (num / den)**2
 
     def calculate_c(self, arm, num_pulls): 
@@ -40,11 +40,13 @@ class HypoTest():
         self.means[arm_t] = ((n-1)/n) * value + (1./n) * r
 
 
-    def run(self, arm): 
-        num_pulls = np.ceil(self.get_num_pulls(arm))
-        c = self.calculate_c(arm, num_pulls) 
+    def run(self, arm, num_pulls = None, c = None): 
+        if num_pulls is not None: 
+            num_pulls = np.ceil(self.get_num_pulls(arm))
+            c = self.calculate_c(arm, num_pulls) 
         action = arm 
         total = 0
+        regrets = []
         for t in range(self.n): 
             if t < num_pulls: 
                 reward = self.bandit.pull_arm(action)
@@ -61,5 +63,12 @@ class HypoTest():
             else: 
                 reward = self.bandit.pull_arm(action)
             self.update(action, reward)
+
+        #     if t % 100 == 0 and t > 0: 
+        #         regret = self.bandit.calculate_regret(self.counts)
+        #         regrets.append(regret)
+        # return regrets
+        regret = self.bandit.calculate_regret(self.counts)
+        return regret
 
 
